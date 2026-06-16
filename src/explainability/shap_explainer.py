@@ -82,7 +82,7 @@ def explain_prediction(
             input_data,
             meta["numerical_features"],
             meta["categorical_features"],
-        ).values
+        )
     
     # Get probability prediction
     pipeline = joblib.load(model_pipeline_path)
@@ -184,7 +184,7 @@ def generate_global_explanations(
             df_sample,
             meta["numerical_features"],
             meta["categorical_features"],
-        ).values
+        )
     
     logger.info("Computing SHAP values for test sample...")
     shap_output = explainer(x_proc)

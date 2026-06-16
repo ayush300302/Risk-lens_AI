@@ -71,7 +71,7 @@ Re-run `pipelines/train.py` after code updates. Typical metrics:
 | Model | ROC-AUC | KS |
 |-------|---------|-----|
 | Logistic Regression | ~0.67 | ~25% |
-| LightGBM | ~0.66+ | ~22% |
+| LightGBM | **~0.71** | **~30%** |
 
 ## Docs
 

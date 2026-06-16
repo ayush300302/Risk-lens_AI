@@ -64,6 +64,11 @@ class _LGBMWrapper(BaseEstimator, ClassifierMixin):
         self.categorical_cols = categorical_cols
 
     def fit(self, X, y=None):
+        self.n_features_in_ = X.shape[1]
+        if y is not None:
+            self.classes_ = np.unique(y)
+        else:
+            self.classes_ = self.model.classes_
         return self
 
     def predict_proba(self, X: pd.DataFrame) -> np.ndarray:

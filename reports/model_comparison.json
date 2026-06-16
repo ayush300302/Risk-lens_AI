@@ -1,0 +1,58 @@
+{
+  "logistic_regression": {
+    "ROC-AUC": 0.667,
+    "PR-AUC": 0.2432,
+    "Gini": 0.334,
+    "KS-Stat (%)": 24.78,
+    "Accuracy": 0.6182,
+    "Default-Precision": 0.2199,
+    "Default-Recall": 0.6248,
+    "Default-F1": 0.3253,
+    "Threshold": 0.4884
+  },
+  "lightgbm": {
+    "ROC-AUC": 0.7067,
+    "PR-AUC": 0.2898,
+    "Gini": 0.4135,
+    "KS-Stat (%)": 30.21,
+    "Accuracy": 0.6485,
+    "Default-Precision": 0.2421,
+    "Default-Recall": 0.6506,
+    "Default-F1": 0.3528,
+    "Threshold": 0.5398
+  },
+  "champion": "LightGBM",
+  "champion_threshold": 0.5398311553493207,
+  "bucket_summary": [
+    {
+      "risk_tier": "Very Low",
+      "count": 122,
+      "avg_pd": 0.04124754098360656,
+      "actual_default_rate": 0.01639344262295082
+    },
+    {
+      "risk_tier": "Low",
+      "count": 1676,
+      "avg_pd": 0.09072476133651551,
+      "actual_default_rate": 0.017899761336515514
+    },
+    {
+      "risk_tier": "Medium",
+      "count": 4313,
+      "avg_pd": 0.17352339438905634,
+      "actual_default_rate": 0.03732900533271505
+    },
+    {
+      "risk_tier": "High",
+      "count": 7888,
+      "avg_pd": 0.2886514198782961,
+      "actual_default_rate": 0.06630324543610548
+    },
+    {
+      "risk_tier": "Very High",
+      "count": 33192,
+      "avg_pd": 0.5738520938780429,
+      "actual_default_rate": 0.1878464690286816
+    }
+  ]
+}
