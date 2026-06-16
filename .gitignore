@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Large data (download loan.csv separately; regenerate parquet locally)
+loan.csv
+data/processed/
+data/features/
+*.parquet
+
+# Model artifacts (regenerate with pipelines/train.py)
+data/models/*.joblib
+
+# Logs & temp
+logs/
+*.log
+_docx_out.txt
+_extract_docx.py
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Hackathon doc (large binary — keep locally)
+HackRush'26 Problem Statements.docx
+
+# Keep small reference outputs in repo
+!data/models/shap_importance.csv
+!reports/
