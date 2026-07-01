@@ -102,10 +102,19 @@ python -c "import polars as pl; df=pl.read_parquet('data/features/features_v1.pa
 
 **What it does:**
 1. **Temporal split:** train ≤2016, val 2017, test 2018
-2. Trains **Logistic Regression** (scaled + one-hot) as baseline
-3. Trains **LightGBM** (native categoricals + early stopping on AUC)
-4. Tunes threshold with **Youden's J** on validation set
-5. Evaluates both on **2018 out-of-time test**
+2. **Hyperparameter Tuning (Optuna & RandomizedSearchCV):**
+   - Tunes LightGBM with **Optuna TPE Bayesian search** (maximizing 2017 validation ROC-AUC).
+   - Tunes Logistic Regression with stratified 5-fold cross-validated RandomizedSearchCV.
+   - Saves best params to `data/models/best_params.joblib`.
+3. Trains **Logistic Regression** baseline (scaled + one-hot) with best parameters
+4. Trains **LightGBM** champion (native categoricals + early stopping on AUC) with best parameters
+5. Tunes decision threshold with **Youden's J** on 2017 validation set
+6. Evaluates both on **2018 out-of-time test**
+
+**Why we choose Optuna for LightGBM tuning:**
+- **Bayesian Optimization (TPE):** Avoids checking configurations blindly like Grid or Random Search. Optuna uses past trials to build a probability model of the search space, focusing searches on promising hyperparameter combinations.
+- **Compute Efficiency:** Finding optimal configurations across 9+ interactive hyperparameters (depth, leaves, learning rate, regularization, etc.) is highly compute-intensive. Optuna reaches optimal configurations in fewer trials (e.g. 50 trials), saving hours of training time.
+- **Validation Integration:** Tunes directly on the out-of-time 2017 validation set, eliminating cross-validation overhead on the 1.1M row training set while tuning for temporal generalization.
 
 **Fix applied (v2):** LightGBM now uses native `category` dtypes and `eval_metric='auc'` with `stopping_rounds=100` — previously stopped at only 5 trees.
 
@@ -349,7 +358,7 @@ streamlit run app/streamlit_app.py
 | 0 | "I materialized 2M rows to Parquet for efficient replayable pipelines." |
 | 1 | "I removed leakage and unresolved loans before any modeling." |
 | 2 | "I built interpretable ratio features, not black-box embeddings." |
-| 3 | "LR baseline for interpretability, LightGBM for accuracy." |
+| 3 | "LR baseline for interpretability, LightGBM champion tuned with Optuna Bayesian search on temporal val." |
 | 4 | "Out-of-time 2018 test — train on past, score the future." |
 | 5 | "SHAP for global importance and per-borrower explanations." |
 | 6–7 | "PD feeds risk tiers and a policy engine with adverse action reasons." |

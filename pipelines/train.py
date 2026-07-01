@@ -47,10 +47,25 @@ def main():
     # Paths
     features_parquet = settings.feature_store_path / "features_v1.parquet"
     model_dir = settings.model_store_path
-    
+    best_params_path = model_dir / "best_params.joblib"
+
     if not features_parquet.exists():
         print(f"[ERROR] Features file not found: {features_parquet}")
         sys.exit(1)
+
+    # Load tuned hyperparameters (produced by pipelines/tune.py)
+    best_params_all = {}
+    if best_params_path.exists():
+        best_params_all = joblib.load(best_params_path)
+        print(f"  [TUNED] Loaded hyperparameters from: {best_params_path}")
+        if "lr" in best_params_all:
+            print(f"          LR  params : {best_params_all['lr']}")
+        if "lgb" in best_params_all:
+            print(f"          LGB params : {best_params_all['lgb']}")
+    else:
+        print("  [DEFAULT] No tuned params found — using hard-coded defaults.")
+        print(f"            Run 'python pipelines/tune.py' to generate tuned params.")
+    print()
 
     # 1. Load and Split Data
     print("-" * 70)
@@ -72,7 +87,9 @@ def main():
     print("-" * 70)
     with profiler.track("train_logistic_regression"):
         lr_model, lr_val_metrics, lr_threshold = train_logistic_regression(
-            X_train, y_train, X_val, y_val, numerical_cols, categorical_cols, settings.random_seed
+            X_train, y_train, X_val, y_val, numerical_cols, categorical_cols,
+            settings.random_seed,
+            best_params=best_params_all.get("lr"),
         )
     print(f"  Optimal threshold: {lr_threshold:.4f}")
     print(f"  Val ROC-AUC: {lr_val_metrics['ROC-AUC']:.4f}\n")
@@ -83,7 +100,9 @@ def main():
     print("-" * 70)
     with profiler.track("train_lightgbm"):
         lgb_model, lgb_val_metrics, lgb_threshold = train_lightgbm(
-            X_train, y_train, X_val, y_val, numerical_cols, categorical_cols, settings.random_seed
+            X_train, y_train, X_val, y_val, numerical_cols, categorical_cols,
+            settings.random_seed,
+            best_params=best_params_all.get("lgb"),
         )
     print(f"  Optimal threshold: {lgb_threshold:.4f}")
     print(f"  Val ROC-AUC: {lgb_val_metrics['ROC-AUC']:.4f}\n")

@@ -40,7 +40,7 @@ Build an end-to-end credit risk system that:
 ### 2.3 Models
 
 - **Baseline:** Logistic Regression (scaled numerics + one-hot categoricals)
-- **Champion:** LightGBM (native categorical features, 300 trees)
+- **Champion:** LightGBM (native categorical features, tuned via **Optuna TPE Bayesian search** on the 2017 validation set). Optuna was chosen over Grid/Random search because it builds a probability model of the search space, focusing trials on promising regions to optimize the 9+ hyperparameters efficiently and maximize ROC-AUC.
 - Threshold tuned with **Youden's J** on 2017 validation set
 
 ---

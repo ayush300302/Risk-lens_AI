@@ -248,45 +248,61 @@ def train_logistic_regression(
     y_val: pd.Series,
     numerical_cols: List[str],
     categorical_cols: List[str],
-    random_seed: int = 42
+    random_seed: int = 42,
+    best_params: Dict[str, Any] = None,
 ) -> Tuple[Pipeline, Dict[str, Any], float]:
     """
     Train a Logistic Regression baseline model.
-    Returns: (fitted pipeline, validation metrics, optimal threshold)
+
+    Parameters
+    ----------
+    best_params : dict, optional
+        Hyperparameters from ``tune_logistic_regression()``.
+        Keys are bare param names (e.g. ``{"C": 0.42, "solver": "lbfgs"}``).
+        When provided, these override the hard-coded defaults.
+
+    Returns
+    -------
+    (fitted pipeline, validation metrics, optimal threshold)
     """
     logger.info("Setting up Logistic Regression pipeline...")
-    
+
+    # --- Merge defaults with any tuned params ---
+    lr_defaults = dict(
+        class_weight="balanced",
+        random_state=random_seed,
+        max_iter=1000,
+    )
+    if best_params:
+        lr_defaults.update(best_params)
+        logger.info(f"LR: applying tuned hyperparameters: {best_params}")
+    else:
+        logger.info("LR: using default hyperparameters (no tuning results found)")
+
     preprocessor = ColumnTransformer(
         transformers=[
             ("num", StandardScaler(), numerical_cols),
             ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), categorical_cols),
         ]
     )
-    
+
     lr_pipeline = Pipeline(
         steps=[
             ("preprocessor", preprocessor),
-            (
-                "classifier",
-                LogisticRegression(
-                    class_weight="balanced",
-                    random_state=random_seed,
-                    max_iter=1000,
-                ),
-            ),
+            ("classifier", LogisticRegression(**lr_defaults)),
         ]
     )
-    
+
     logger.info("Training Logistic Regression...")
     lr_pipeline.fit(X_train, y_train)
-    
+
     # Find optimal threshold on validation set
     y_val_prob = lr_pipeline.predict_proba(X_val)[:, 1]
     optimal_threshold = find_optimal_threshold(y_val.values, y_val_prob)
-    
+
     # Evaluate on validation set with optimal threshold
     val_metrics = evaluate_model(lr_pipeline, X_val, y_val, "LR Baseline (Val)", threshold=optimal_threshold)
-    
+
     return lr_pipeline, val_metrics, optimal_threshold
 
 
@@ -297,23 +313,36 @@ def train_lightgbm(
     y_val: pd.Series,
     numerical_cols: List[str],
     categorical_cols: List[str],
-    random_seed: int = 42
+    random_seed: int = 42,
+    best_params: Dict[str, Any] = None,
 ) -> Tuple[Pipeline, Dict[str, Any], float]:
     """
     Train a LightGBM champion classifier.
-    Returns: (fitted pipeline, validation metrics, optimal threshold)
+
+    Parameters
+    ----------
+    best_params : dict, optional
+        Hyperparameters from ``tune_lightgbm()``.
+        Keys are bare LGBMClassifier param names
+        (e.g. ``{"n_estimators": 450, "learning_rate": 0.03, ...}``).
+        When provided, these override the hard-coded defaults.
+
+    Returns
+    -------
+    (fitted pipeline, validation metrics, optimal threshold)
     """
     logger.info("Setting up LightGBM pipeline...")
 
     neg_count = (y_train == 0).sum()
     pos_count = (y_train == 1).sum()
-    scale_pos_weight = neg_count / pos_count
+    scale_pos_weight = float(neg_count / pos_count)
     logger.info(f"Class ratio (neg/pos): {scale_pos_weight:.2f}")
 
     X_train_df = _cast_lgb_dtypes(X_train, numerical_cols, categorical_cols)
-    X_val_df = _cast_lgb_dtypes(X_val, numerical_cols, categorical_cols)
+    X_val_df   = _cast_lgb_dtypes(X_val,   numerical_cols, categorical_cols)
 
-    lgb_model = lgb.LGBMClassifier(
+    # --- Merge defaults with any tuned params ---
+    lgb_defaults = dict(
         n_estimators=300,
         learning_rate=0.05,
         num_leaves=31,
@@ -328,6 +357,18 @@ def train_lightgbm(
         n_jobs=-1,
         verbosity=-1,
     )
+    if best_params:
+        lgb_defaults.update(best_params)
+        # Always enforce fixed params regardless of tuning output
+        lgb_defaults["scale_pos_weight"] = scale_pos_weight
+        lgb_defaults["random_state"] = random_seed
+        lgb_defaults["n_jobs"] = -1
+        lgb_defaults["verbosity"] = -1
+        logger.info(f"LGB: applying tuned hyperparameters: {best_params}")
+    else:
+        logger.info("LGB: using default hyperparameters (no tuning results found)")
+
+    lgb_model = lgb.LGBMClassifier(**lgb_defaults)
 
     logger.info("Training LightGBM Champion model...")
     lgb_model.fit(
@@ -346,12 +387,12 @@ def train_lightgbm(
         ]
     )
     lgb_pipeline.fit(X_train, y_train)
-    
+
     # Find optimal threshold on validation set
     y_val_prob = lgb_pipeline.predict_proba(X_val)[:, 1]
     optimal_threshold = find_optimal_threshold(y_val.values, y_val_prob)
-    
+
     # Evaluate on validation set with optimal threshold
     val_metrics = evaluate_model(lgb_pipeline, X_val, y_val, "LightGBM Champion (Val)", threshold=optimal_threshold)
-    
+
     return lgb_pipeline, val_metrics, optimal_threshold

@@ -27,7 +27,7 @@ Use this as a **layered script**. Start short. Only go deeper when the interview
 >
 > I validated with an **out-of-time split** — train through 2016, validate on 2017, test on 2018 — so metrics reflect how the model would perform on **future** loans, not a random mix of years.
 >
-> On the 2018 holdout, logistic regression reached about **0.67 ROC-AUC** with **~25% KS**, which is reasonable for a model that deliberately excludes lender-assigned fields like grade and interest rate."
+> On the 2018 holdout, our LightGBM champion reached **0.71 ROC-AUC** with **30.2% KS**, compared to a Logistic Regression baseline of **0.67 ROC-AUC** and **24.8% KS**. This is strong performance for models that deliberately exclude lender-assigned fields like grade and interest rate."
 
 **Stop here.** Wait for a follow-up.
 
@@ -58,8 +58,8 @@ Use this as a **layered script**. Start short. Only go deeper when the interview
 ### Results (2018 test, headline numbers)
 | Model | ROC-AUC | KS | Notes |
 |-------|---------|-----|-------|
-| Logistic Regression | **0.667** | **24.8%** | Interpretable baseline |
-| LightGBM | 0.655 | 22.1% | Champion candidate; tuning in progress |
+| Logistic Regression | 0.667 | 24.8% | Interpretable baseline |
+| LightGBM (Champion) | **0.707** | **30.2%** | Champion tuned with Optuna |
 
 ### Business layer
 - PD → 5 risk tiers (Very Low → Very High) with suggested rate bands.
@@ -136,8 +136,13 @@ Use this as a **layered script**. Start short. Only go deeper when the interview
 **Short answer:**
 > "Logistic regression is the **interpretable baseline** banks still use. LightGBM is the **performance champion** for tabular credit data. I compare both on the same out-of-time test."
 
-**If they ask why LGB < LR:**
-> "LightGBM underperformed because early stopping kicked in too aggressively — only ~5 trees. That's a training-config issue, not a reason to drop the approach. Fix: native categorical handling, relaxed early stopping, and hyperparameter tuning on temporal CV."
+**If they ask how you tuned LightGBM / Why Optuna:**
+> "I tuned LightGBM using **Optuna's Tree-structured Parzen Estimator (TPE) Bayesian search** on the 2017 validation set.
+>
+> We chose **Optuna** over Grid or Random Search because:
+> 1. **Bayesian Optimization:** It builds a probability model of the 9+ hyperparameter search space, learning from previous trials to find optimal parameters in fewer runs.
+> 2. **Efficiency:** Rather than running hours of Grid Search, Optuna found a champion configuration (ROC-AUC `0.707`, KS `30.2%`) in just 50 trials.
+> 3. **Validation Strategy:** Evaluated trials directly on the 2017 out-of-time validation set to prevent cross-validation overhead and ensure temporal generalization."
 
 ---
 
@@ -215,9 +220,10 @@ Pick 2–3 (don't list all ten):
 | Features | ~90 |
 | Train / Val / Test | 1.10M / 159k / 47k |
 | Default rate (train / val / test) | ~20% / ~23% / ~15% |
-| LR test ROC-AUC | **0.667** |
-| LGB test ROC-AUC | 0.655 |
-| LR test KS | **24.8%** |
+| LR test ROC-AUC | 0.667 |
+| LGB test ROC-AUC | **0.707** |
+| LR test KS | 24.8% |
+| LGB test KS | **30.2%** |
 | LR optimal threshold | ~0.49 |
 | Leakage columns removed | grade, int_rate, installment, payment fields, etc. |
 
@@ -228,7 +234,7 @@ Pick 2–3 (don't list all ten):
 | Avoid | Say instead |
 |-------|-------------|
 | "I used all 145 columns" | "I used application-time features only after leakage review" |
-| "LightGBM is the champion" (without caveat) | "LightGBM is the target champion; LR currently wins on OOT test while LGB tuning is in progress" |
+| "LightGBM is the champion" (without explaining tuning) | "LightGBM is the champion reaching 0.707 ROC-AUC after tuning hyperparameters with Optuna's Bayesian search" |
 | "Current = non-default" (as your only definition) | "I excluded Current because outcome is unknown — stronger than naive mapping" |
 | "0.67 is bad" | "0.67 OOT without pricing fields is reasonable; KS ~25% supports ranking power" |
 | Long monologue on Polars internals | "Polars for memory-efficient cleaning at 2M+ row scale" |

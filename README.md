@@ -64,6 +64,13 @@ RiskLens AI/
 
 Leakage columns (`grade`, `int_rate`, payment history, etc.) are removed before training.
 
+## Hyperparameter Tuning (Optuna)
+
+We use **Optuna** for tuning the LightGBM champion model's hyperparameters (optimizing validation ROC-AUC). We chose Optuna over Grid or Random Search because:
+1. **Bayesian Optimization (TPE):** Instead of checking parameters blindly, Optuna builds a probability model of the search space using previous trials to guide subsequent trials toward the most promising parameter regions.
+2. **Compute Efficiency:** LightGBM has a large search space (9+ hyperparameters). Optuna finds high-performing parameters in far fewer trials (e.g., 50 trials) compared to Grid Search, saving hours of training time.
+3. **Out-of-Time Validation Integration:** Optuna is set up to evaluate trials directly on the 2017 out-of-time validation set. This avoids the high overhead of multi-fold cross-validation on the 1.1M row training set, while ensuring the model tunes for temporal generalization.
+
 ## Key results (2018 test set)
 
 Re-run `pipelines/train.py` after code updates. Typical metrics:
