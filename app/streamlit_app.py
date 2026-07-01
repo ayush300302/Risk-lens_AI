@@ -217,14 +217,7 @@ def render_login_page():
                 else:
                     st.error("🔒 Access Denied: Invalid Username or Password Credentials.")
                     
-            # Info Box displaying credentials for hackathon evaluation
-            st.markdown("""
-            <div class="cred-info">
-                <strong>Portal Authentication Credentials:</strong><br>
-                • <b>Credit Underwriter:</b> <code>underwriter@risklens.ai</code> / <code>underwriter123</code><br>
-                • <b>Risk Manager:</b> <code>riskmanager@risklens.ai</code> / <code>manager123</code>
-            </div>
-            """, unsafe_allow_html=True)
+            # Info box removed for production-grade security gateway
 
 
 # Verify Authentication
