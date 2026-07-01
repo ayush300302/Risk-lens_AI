@@ -532,11 +532,47 @@ with col2:
 # ============================================================
 if st.session_state["user_role"] == "Risk Manager":
     st.divider()
-    st.subheader("Global Portfolio & Validation Reports (Admin Only)")
+    st.subheader("📊 Global Portfolio & Validation Reports (Admin Only)")
+    
+    # 1. Expected Loss Dashboard Section
     reports_dir = project_root / "reports"
+    summary_csv = reports_dir / "portfolio_summary.csv"
+    
+    if summary_csv.exists():
+        try:
+            df_summary = pd.read_csv(summary_csv)
+            total_el = df_summary["total_expected_loss"].sum()
+            total_exposure = df_summary["total_exposure"].sum()
+            el_rate = (total_el / total_exposure) * 100
+            
+            st.markdown("### Portfolio Expected Loss Summary")
+            
+            # Draw KPI Cards for Risk Manager
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Total Exposure (EAD)", f"${total_exposure:,.0f}")
+            c2.metric("Total Expected Loss (EL)", f"${total_el:,.0f}")
+            c3.metric("Expected Loss Rate", f"{el_rate:.2f}%")
+            
+            # Format and show tabular breakdown
+            st.markdown("**Expected Loss Breakdown by Risk Tier**")
+            df_disp = df_summary.copy()
+            df_disp["total_exposure"] = df_disp["total_exposure"].apply(lambda x: f"${x:,.0f}")
+            df_disp["total_expected_loss"] = df_disp["total_expected_loss"].apply(lambda x: f"${x:,.0f}")
+            df_disp["avg_pd"] = df_disp["avg_pd"].apply(lambda x: f"{x:.2%}")
+            df_disp["actual_default_rate"] = df_disp["actual_default_rate"].apply(lambda x: f"{x:.2%}")
+            df_disp["pct_of_portfolio"] = df_disp["pct_of_portfolio"].apply(lambda x: f"{x:.1f}%")
+            df_disp["pct_of_exposure"] = df_disp["pct_of_exposure"].apply(lambda x: f"{x:.1f}%")
+            
+            st.dataframe(df_disp, use_container_width=True)
+            st.markdown("---")
+        except Exception as e:
+            st.error(f"Error loading portfolio Expected Loss summary: {e}")
+            
+    # 2. Charts dropdown section
     if reports_dir.exists():
         charts = list(reports_dir.glob("*.png"))
         if charts:
+            st.markdown("### Model Validation Curves & Feature Importances")
             selected_chart = st.selectbox("Select Portfolio Chart / Curve to view", [p.name for p in charts])
             st.image(str(reports_dir / selected_chart), use_container_width=True)
         else:
@@ -545,4 +581,4 @@ if st.session_state["user_role"] == "Risk Manager":
         st.info("No global reports directory found.")
 else:
     st.divider()
-    st.info("ℹ️ **Risk Manager Privilege Required:** Global validation curves,Expected Loss (EL) analysis, and portfolio concentration tables are restricted to Risk Manager roles. Current role: `Credit Underwriter`.")
+    st.info("ℹ️ **Risk Manager Privilege Required:** Global validation curves, Expected Loss (EL) analysis, and portfolio concentration tables are restricted to Risk Manager roles. Current role: `Credit Underwriter`.")
